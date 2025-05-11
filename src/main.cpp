@@ -73,11 +73,11 @@ void checker_check_file(const std::filesystem::path& path) {
   // Open the source file file
   std::ifstream file(path);
   if(!file.is_open()) {
-    printf("[CHECKER-ERROR]: Failed to open source file at \'%s\'\n", path.c_str());
+    printf("[CHECKER-ERROR]: Failed to open source file at \'%s\'\n", path.string().c_str());
     return;
   }
   
-  printf("[CHECKER-TRACE]: Searching in file \'%s\'...\n", path.c_str());
+  printf("[CHECKER-TRACE]: Searching in file \'%s\'...\n", path.string().c_str());
 
   // A new entry to the checker
   CheckerEntry entry;
@@ -133,11 +133,11 @@ void checker_list() {
   printf("\n\n+++++ Win32Checker ++++++\n"); 
 
   for(auto& entry : s_checker.entries) {
-    printf("\n=== === %s === ===\n", entry.file_name.c_str()); 
+    printf("\n=== === %s === ===\n", entry.file_name.string().c_str()); 
     printf("\nWin32 functions amount  = %zu", entry.functions.size()); 
     printf("\nWin32 headers amount    = %zu", entry.headers.size()); 
     printf("\nWin32 total occurrences = %i", entry.total_occurrences); 
-    printf("\n\n=== === %s === ===\n\n", entry.file_name.c_str()); 
+    printf("\n\n=== === %s === ===\n\n", entry.file_name.string().c_str()); 
   }
 
   printf("\n=== === Global === ===\n"); 
