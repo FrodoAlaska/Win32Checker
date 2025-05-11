@@ -76,6 +76,8 @@ void checker_check_file(const std::filesystem::path& path) {
     printf("[CHECKER-ERROR]: Failed to open source file at \'%s\'\n", path.c_str());
     return;
   }
+  
+  printf("[CHECKER-TRACE]: Searching in file \'%s\'...\n", path.c_str());
 
   // A new entry to the checker
   CheckerEntry entry;

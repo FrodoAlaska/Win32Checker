@@ -42,6 +42,4 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 ############################################################
 install(TARGETS ${PROJECT_NAME} win32checker
         DESTINATION bin)
-install(FILES ${CMAKE_SOURCE_DIR}/win32_functions_list.txt ${CMAKE_CURRENT_BINARY_DIR}/win32_functions_list.txt
-        DESTINATION bin)
 ############################################################
