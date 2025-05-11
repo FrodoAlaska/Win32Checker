@@ -6,6 +6,8 @@
 #include <vector>
 #include <filesystem>
 
+#include "win32_api_index.h"
+
 /// -------------------------------------------------------------------------------------------------
 /// DEFS
 
@@ -30,10 +32,7 @@ struct CheckerEntry {
 /// -------------------------------------------------------------------------------------------------
 /// CheckerState
 struct CheckerState {
-  std::vector<std::string> functions_index;
-  std::vector<std::string> headers_index;
   std::unordered_set<std::filesystem::path> exculsions;
-
   std::vector<CheckerEntry> entries;
 
   int total_headers   = 0; 
@@ -60,28 +59,6 @@ static bool is_valid_file_extension(const std::filesystem::path& ext) {
 /// -------------------------------------------------------------------------------------------------
 /// Checker functions
 
-void checker_build_database() {
-  // Build the headers index
-  s_checker.headers_index.push_back("#include <windows.h>"); 
-  s_checker.headers_index.push_back("#include <Windows.h>"); 
-
-  // Build the functions index
-  // @TODO: Awful. Please fix.
-  std::ifstream file("../win32_functions_list.txt");
-  if(!file.is_open()) {
-    printf("[CHECKER-ERROR]: Failed to open source file file at \'../win32_functions_list.txt\'\n");
-    return;
-  }
-
-  // Go through every line and check againt the "database"
-  std::string line; 
-  while(std::getline(file, line)) {
-    s_checker.functions_index.push_back(line);
-  }
-
-  file.close();
-}
-
 void checker_check_file(const std::filesystem::path& path) {
   // We only care about source files
   if(!is_valid_file_extension(path.extension())) {
@@ -96,7 +73,7 @@ void checker_check_file(const std::filesystem::path& path) {
   // Open the source file file
   std::ifstream file(path);
   if(!file.is_open()) {
-    printf("[CHECKER-ERROR]: Failed to open source file file at \'%s\'\n", path.c_str());
+    printf("[CHECKER-ERROR]: Failed to open source file at \'%s\'\n", path.c_str());
     return;
   }
 
@@ -110,7 +87,7 @@ void checker_check_file(const std::filesystem::path& path) {
   std::string source_code = ss.str(); 
   
   // Go through the headers index and try to find it in the source code
-  for(auto& header : s_checker.headers_index) {
+  for(auto& header : WIN32_HEADERS) {
     // Check against the functions index
     if(source_code.find(header) != std::string::npos) {
       entry.headers.push_back(header);
@@ -119,7 +96,7 @@ void checker_check_file(const std::filesystem::path& path) {
   }
 
   // Go through the function index and try to find it in the source code
-  for(auto& func : s_checker.functions_index) {
+  for(auto& func : WIN32_FUNCTIONS) {
     // Check against the functions index
     if(source_code.find(func) != std::string::npos) {
       entry.functions.push_back(func);
@@ -244,8 +221,6 @@ int args_parse(int argc, char** argv) {
 /// Main function
 
 int main(int argc, char** argv) {
-  checker_build_database();
-
   // Parse the arguments and act accordingly
   return args_parse(argc, argv);
 }
