@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <sstream>
 #include <string>
 #include <fstream>
 #include <unordered_set>
@@ -8,18 +9,35 @@
 /// -------------------------------------------------------------------------------------------------
 /// DEFS
 
-#define FLAGS_MAX 8
+#define FLAGS_MAX 10
 
 /// DEFS
 /// -------------------------------------------------------------------------------------------------
 
 /// -------------------------------------------------------------------------------------------------
-/// CheckerState
-struct CheckerState {
-  std::unordered_set<std::string> database;
+/// CheckerEntry
+struct CheckerEntry {
+  std::filesystem::path file_name;
 
   std::vector<std::string> functions;
   std::vector<std::string> headers;
+
+  int total_occurrences;
+};
+/// CheckerEntry
+/// -------------------------------------------------------------------------------------------------
+
+/// -------------------------------------------------------------------------------------------------
+/// CheckerState
+struct CheckerState {
+  std::vector<std::string> functions_index;
+  std::vector<std::string> headers_index;
+  std::unordered_set<std::filesystem::path> exculsions;
+
+  std::vector<CheckerEntry> entries;
+
+  int total_headers   = 0; 
+  int total_functions = 0;
 };
 
 static CheckerState s_checker;
@@ -27,13 +45,54 @@ static CheckerState s_checker;
 /// -------------------------------------------------------------------------------------------------
 
 /// -------------------------------------------------------------------------------------------------
+/// Private functions
+
+static bool is_valid_file_extension(const std::filesystem::path& ext) {
+  return ext == ".cpp" || 
+         ext == ".h"   || 
+         ext == ".hpp" || 
+         ext == ".c";
+}
+
+/// Private functions
+/// -------------------------------------------------------------------------------------------------
+
+/// -------------------------------------------------------------------------------------------------
 /// Checker functions
 
 void checker_build_database() {
-  s_checker.database.emplace("#include <windows.h>"); 
+  // Build the headers index
+  s_checker.headers_index.push_back("#include <windows.h>"); 
+  s_checker.headers_index.push_back("#include <Windows.h>"); 
+
+  // Build the functions index
+  // @TODO: Awful. Please fix.
+  std::ifstream file("../win32_functions_list.txt");
+  if(!file.is_open()) {
+    printf("[CHECKER-ERROR]: Failed to open source file file at \'../win32_functions_list.txt\'\n");
+    return;
+  }
+
+  // Go through every line and check againt the "database"
+  std::string line; 
+  while(std::getline(file, line)) {
+    s_checker.functions_index.push_back(line);
+  }
+
+  file.close();
 }
 
-void checker_check_file(const std::string& path) {
+void checker_check_file(const std::filesystem::path& path) {
+  // We only care about source files
+  if(!is_valid_file_extension(path.extension())) {
+    return;
+  }
+
+  // We don't care about any exculsions
+  if(s_checker.exculsions.find(path.parent_path()) != s_checker.exculsions.end()) {
+    return;
+  }
+
   // Open the source file file
   std::ifstream file(path);
   if(!file.is_open()) {
@@ -41,35 +100,39 @@ void checker_check_file(const std::string& path) {
     return;
   }
 
-  // Go through every line and check againt the "database"
-  std::string line; 
-  while(std::getline(file, line)) {
-    if(s_checker.database.find(line) != s_checker.database.end()) {
-      s_checker.headers.push_back(line);
+  // A new entry to the checker
+  CheckerEntry entry;
+  entry.file_name = path.filename();
+
+  // Get the full source code string
+  std::stringstream ss;
+  ss << file.rdbuf();
+  std::string source_code = ss.str(); 
+  
+  // Go through the headers index and try to find it in the source code
+  for(auto& header : s_checker.headers_index) {
+    // Check against the functions index
+    if(source_code.find(header) != std::string::npos) {
+      entry.headers.push_back(header);
+      s_checker.total_headers++;
+    }
+  }
+
+  // Go through the function index and try to find it in the source code
+  for(auto& func : s_checker.functions_index) {
+    // Check against the functions index
+    if(source_code.find(func) != std::string::npos) {
+      entry.functions.push_back(func);
+      s_checker.total_functions++;
     }
   }
 
   file.close();
-}
 
-void checker_check_files(char** paths, const int begin, const int end) {
-  for(int i = begin; i < end; i++) {
-    // Open the source file file
-    std::ifstream file(paths[i]);
-    if(!file.is_open()) {
-      printf("[CHECKER-ERROR]: Failed to open source file file at \'%s\'\n", paths[i]);
-      return;
-    }
-
-    // Go through every line and check againt the "database"
-    std::string line; 
-    while(std::getline(file, line)) {
-      if(s_checker.database.find(line) != s_checker.database.end()) {
-        s_checker.headers.push_back(line);
-      }
-    }
-
-    file.close();
+  // Only add the entry if there are occurrences of Win32 in the file 
+  if(!entry.functions.empty() || !entry.headers.empty()) {
+    entry.total_occurrences = entry.headers.size() + entry.functions.size();
+    s_checker.entries.push_back(entry);
   }
 }
 
@@ -89,12 +152,21 @@ void checker_check_directory(const std::string& dir, const bool recursive) {
 
 void checker_list() {
   printf("\n\n+++++ Win32Checker ++++++\n"); 
+
+  for(auto& entry : s_checker.entries) {
+    printf("\n=== === %s === ===\n", entry.file_name.c_str()); 
+    printf("\nWin32 functions amount  = %zu", entry.functions.size()); 
+    printf("\nWin32 headers amount    = %zu", entry.headers.size()); 
+    printf("\nWin32 total occurrences = %i", entry.total_occurrences); 
+    printf("\n\n=== === %s === ===\n\n", entry.file_name.c_str()); 
+  }
+
+  printf("\n=== === Global === ===\n"); 
+  printf("\nTotal functions amount  = %i", s_checker.total_functions); 
+  printf("\nTotal headers amount    = %i", s_checker.total_headers); 
+  printf("\n\n=== === Global === ===\n\n"); 
   
-  printf("\nWin32 functions amount  = %zu", s_checker.functions.size()); 
-  printf("\nWin32 headers amount    = %zu", s_checker.headers.size()); 
-  printf("\nWin32 total occurrences = %zu", s_checker.headers.size() + s_checker.functions.size()); 
-  
-  printf("\n\n+++++ Win32Checker ++++++\n\n"); 
+  printf("\n+++++ Win32Checker ++++++\n\n"); 
 }
 
 /// Checker functions
@@ -105,8 +177,12 @@ void checker_list() {
 
 void args_show_help() {
   printf("\n\n----- Win32Checker: A tool to check all the win32 occurrences in a project -----\n\n"); 
-  printf("Win32Checker usage: \n");
-  printf("\twin32checker [--file -f] [--directory -d] [--recursive -r] <path> = Run the given path through the checker\n");
+  printf("Win32Checker usage: win32checker [options] <path>\n\n");
+  printf("\twin32checker [--file -f]      = Run only a single source file through the checker.\n");
+  printf("\twin32checker [--directory -d] = Iterate through a directory and run each source file through the checker.\n");
+  printf("\twin32checker [--recursive -r] = Recursively iterate through a directory and run each source file through the checker.\n");
+  printf("\twin32checker [--exclude -e]   = Exclude a certain file or directory from the search.\n");
+  printf("\twin32checker [--help -h]      = Show this help screen.\n");
   printf("\n\n----- Win32Checker: A tool to check all the win32 occurrences in a project -----\n\n"); 
 }
 
@@ -121,11 +197,12 @@ int args_parse(int argc, char** argv) {
     "--file", "-f",
     "--directory", "-d", 
     "--recursive", "-r",
+    "--exclude", "-e",
     "--help", "-h"
   };
 
   // Go through all the possible commands and compare
-  for(int i = 1; i <= argc; i++) {
+  for(int i = 1; i < argc; i++) {
     // File 
     if(flags[0] == argv[i] || flags[1] == argv[i]) {
       checker_check_file(argv[++i]);
@@ -138,21 +215,25 @@ int args_parse(int argc, char** argv) {
     else if(flags[4] == argv[i] || flags[5] == argv[i]) {
       checker_check_directory(argv[++i], true);
     }
-    // Help 
+    // Exclude 
     else if(flags[6] == argv[i] || flags[7] == argv[i]) {
+      s_checker.exculsions.emplace(argv[++i]);
+    }
+    // Help 
+    else if(flags[8] == argv[i] || flags[9] == argv[i]) {
       args_show_help();
+      return 0;
     }
     // Error!
     else {
       printf("[CHECKER-ERROR]: The given argument \'%s\' is invalid\n", argv[i]);
       args_show_help();
-
+      
       return -1;
     }
-
-    checker_list();
   }
 
+  checker_list();
   return 0;
 }
 
