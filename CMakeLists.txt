@@ -20,6 +20,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ############################################################
 set(PROJECT_SOURCES 
   ${PROJECT_SRC_DIR}/main.cpp
+  ${PROJECT_SRC_DIR}/checker.cpp
 )
 ############################################################
 

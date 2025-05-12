@@ -4,7 +4,7 @@ A CLI application that checks and returns the amount of Win32 "dependency" in a 
 
 ## Build Instructions
 
-Like any other C++ project out there, this project uses CMake for its build system. It's only a single file (`main.cpp`), using only `C++17` features. No dependencies at all. However, the project does depend on the `win32_functions_list.txt` file, so make sure to have it at the same place as the executable.
+Like any other C++ project out there, this project uses CMake for its build system. It's only a couple of files, using only `C++17` features. No dependencies at all. However, the project does depend on the `win32_functions_list.txt` file, so make sure to have it at the same place as the executable.
 
 Either way, if you run the commands below, you should be able to compile Win32Checker. 
 

@@ -6,8 +6,8 @@
 // since I don't the program to carry around a file everywhere it goes, this 
 // should be a better _temporary_ solution. 
 static const std::vector<const char*> WIN32_HEADERS = {
-  "windows.h",
-  "Windows.h",
+  "windows.h", "winbase.h", "winuser.h", "wingdi.h", "winsock2.h",
+  "winreg.h", "winnt.h", "winerror.h", "wtypes.h", "shlobj.h"
 };
 
 static const std::vector<const char*> WIN32_FUNCTIONS = {
