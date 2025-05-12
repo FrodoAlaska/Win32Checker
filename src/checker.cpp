@@ -11,7 +11,7 @@
 /// -------------------------------------------------------------------------------------------------
 /// DEFS
 
-#define VALID_OPTIONS_MAX 7
+#define VALID_OPTIONS_MAX 8
 
 /// DEFS
 /// -------------------------------------------------------------------------------------------------
@@ -19,7 +19,8 @@
 /// -------------------------------------------------------------------------------------------------
 /// ArgsToken 
 enum ArgsToken {
-  ARGS_TOKEN_FILE = 0,
+  ARGS_TOKEN_WORKING_DIR = 0,
+  ARGS_TOKEN_FILE,
   ARGS_TOKEN_DIRECTORY, 
   ARGS_TOKEN_RECURSIVE,
   ARGS_TOKEN_EXCLUDE,
@@ -64,6 +65,7 @@ struct CheckerState {
   
   std::vector<CheckerEntry> entries;
 
+  std::filesystem::path working_dir      = "";
   std::filesystem::path output_file_name = "output.txt";
 
   int total_headers   = 0; 
@@ -92,13 +94,14 @@ static bool is_arg_valid(char* argv, const Args& arg) {
 void show_help() {
   printf("\n\n----- Win32Checker: A tool to check all the win32 occurrences in a project -----\n\n"); 
   printf("Win32Checker usage: win32checker [options] <path>\n\n");
-  printf("\twin32checker [--file -f]      = Run only a single source file through the checker.\n");
-  printf("\twin32checker [--directory -d] = Iterate through a directory and run each source file through the checker.\n");
-  printf("\twin32checker [--recursive -r] = Recursively iterate through a directory and run each source file through the checker.\n");
-  printf("\twin32checker [--exclude -e]   = Exclude a certain file or directory from the search.\n");
-  printf("\twin32checker [--output -o]    = Specify a certain file to write results to.\n");
-  printf("\twin32checker [--verbose -v]   = Print out the results in realtime.\n");
-  printf("\twin32checker [--help -h]      = Show this help screen.\n");
+  printf("\twin32checker [--working-dir -wd] = The path to prepend to any subsequent paths.\n");
+  printf("\twin32checker [--file -f]         = Run only a single source file through the checker.\n");
+  printf("\twin32checker [--directory -d]    = Iterate through a directory and run each source file through the checker.\n");
+  printf("\twin32checker [--recursive -r]    = Recursively iterate through a directory and run each source file through the checker.\n");
+  printf("\twin32checker [--exclude -e]      = Exclude a certain file or directory from the search.\n");
+  printf("\twin32checker [--output -o]       = Specify a certain file to write results to.\n");
+  printf("\twin32checker [--verbose -v]      = Print out the results in realtime.\n");
+  printf("\twin32checker [--help -h]         = Show this help screen.\n");
   printf("\n\n----- Win32Checker: A tool to check all the win32 occurrences in a project -----\n\n"); 
 }
 
@@ -114,6 +117,7 @@ static void lex_arguments(int argc, char** argv, std::vector<Args>* out_args) {
   out_args->reserve(argc);
 
   Args valid_options[VALID_OPTIONS_MAX] = {
+    {ARGS_TOKEN_WORKING_DIR, "--working-dir", "-wd"},
     {ARGS_TOKEN_FILE, "--file", "-f"},
     {ARGS_TOKEN_DIRECTORY, "--directory", "-d"}, 
     {ARGS_TOKEN_RECURSIVE, "--recursive", "-r"},
@@ -149,23 +153,33 @@ static void lex_arguments(int argc, char** argv, std::vector<Args>* out_args) {
 
 void check_directory(const std::string& dir, const bool recursive) {
   if(!recursive) {
-    for(auto& path : std::filesystem::directory_iterator(dir)) {
+    for(auto& path : std::filesystem::directory_iterator(s_checker.working_dir / dir)) {
       if(!is_valid_file_extension(path.path().extension())) {
         continue;
       }
 
-      s_checker.source_files.push_back(path.path().string());
+      s_checker.source_files.push_back(path.path());
     }
     
     return;
   }
   
-  for(auto& path : std::filesystem::recursive_directory_iterator(dir)) {
+  for(auto& path : std::filesystem::recursive_directory_iterator(s_checker.working_dir / dir)) {
     if(!is_valid_file_extension(path.path().extension())) {
       continue;
     }
 
-    s_checker.source_files.push_back(path.path().string());
+      s_checker.source_files.push_back(path.path());
+  }
+}
+
+void exclude_directory(const std::string& dir) {
+  for(auto& path : std::filesystem::recursive_directory_iterator(s_checker.working_dir / dir)) {
+    if(!is_valid_file_extension(path.path().extension())) {
+      continue;
+    }
+
+    s_checker.exculsions.emplace(path.path());
   }
 }
 
@@ -198,7 +212,7 @@ static void exclude_dir_token(std::vector<Args>& args, int* current_index) {
   Args* current_arg = &args[*current_index + 1];
 
   while(current_arg->token == ARGS_TOKEN_LITERAL) {
-    s_checker.exculsions.emplace(current_arg->option);
+    exclude_directory(current_arg->option);
 
     *current_index += 1;
     current_arg     = &args[*current_index + 1];
@@ -213,6 +227,9 @@ bool parse_arguments(int argc, char** argv) {
     Args* current_arg = &args[i]; 
 
     switch(current_arg->token) {
+      case ARGS_TOKEN_WORKING_DIR:
+        s_checker.working_dir = args[++i].option;
+        break;
       case ARGS_TOKEN_FILE:
         file_token_check(args, &i);
         break;
@@ -266,7 +283,7 @@ bool checker_init(int argc, char** argv) {
 
 void checker_check_file(const std::filesystem::path& path) {
   // We don't care about any exculsions
-  if(s_checker.exculsions.find(path.parent_path()) != s_checker.exculsions.end()) {
+  if(s_checker.exculsions.find(path) != s_checker.exculsions.end()) {
     return;
   }
 
