@@ -28,6 +28,8 @@ win32checker [--file -f]      = Run only a single source file through the checke
 win32checker [--directory -d] = Iterate through a directory and run each source file through the checker.
 win32checker [--recursive -r] = Recursively iterate through a directory and run each source file through the checker.
 win32checker [--exclude -e]   = Exclude a certain file or directory from the search.
+win32checker [--output -o]    = Specify a certain file to write results to.
+win32checker [--verbose -v]   = Print out the results in realtime.
 win32checker [--help -h]      = Show this help screen.
 ```
 
@@ -65,14 +67,28 @@ Win32 total occurrences = 11
 
 === === main.cpp === ===
 
+=== === window.cpp === ===
+
+Win32 functions amount  = 30
+Win32 headers amount    = 3
+Win32 total occurrences = 33
+
+=== === main.cpp === ===
+
 === === Global === ===
 
-Total functions amount  = 11
-Total headers amount    = 1
+Total functions amount  = 40
+Total headers amount    = 4
 
 === === Global === ===
 
 +++++ Win32Checker ++++++
+```
+
+You can also save the results into a specific output file by using the commands below: 
+
+```
+win32checker --file "path/to/Win32App/src/main.cpp" "path/to/Win32App/window.cpp" --output "../output.txt"
 ```
 
 We can also exclude certain directories from the search:
