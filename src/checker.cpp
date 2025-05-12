@@ -11,7 +11,7 @@
 /// -------------------------------------------------------------------------------------------------
 /// DEFS
 
-#define VALID_OPTIONS_MAX 6
+#define VALID_OPTIONS_MAX 7
 
 /// DEFS
 /// -------------------------------------------------------------------------------------------------
@@ -25,6 +25,7 @@ enum ArgsToken {
   ARGS_TOKEN_EXCLUDE,
   ARGS_TOKEN_OUTPUT,
   ARGS_TOKEN_HELP,
+  ARGS_TOKEN_VERBOSE,
   ARGS_TOKEN_LITERAL, 
   ARGS_TOKEN_EOF,
 };
@@ -67,9 +68,10 @@ struct CheckerState {
 
   int total_headers   = 0; 
   int total_functions = 0;
+  bool is_verbose     = false;
 };
 
-static CheckerState s_checker;
+static CheckerState s_checker = {};
 /// CheckerState
 /// -------------------------------------------------------------------------------------------------
 
@@ -95,6 +97,7 @@ void show_help() {
   printf("\twin32checker [--recursive -r] = Recursively iterate through a directory and run each source file through the checker.\n");
   printf("\twin32checker [--exclude -e]   = Exclude a certain file or directory from the search.\n");
   printf("\twin32checker [--output -o]    = Specify a certain file to write results to.\n");
+  printf("\twin32checker [--verbose -v]   = Print out the results in realtime.\n");
   printf("\twin32checker [--help -h]      = Show this help screen.\n");
   printf("\n\n----- Win32Checker: A tool to check all the win32 occurrences in a project -----\n\n"); 
 }
@@ -116,7 +119,8 @@ static void lex_arguments(int argc, char** argv, std::vector<Args>* out_args) {
     {ARGS_TOKEN_RECURSIVE, "--recursive", "-r"},
     {ARGS_TOKEN_EXCLUDE, "--exclude", "-e"},
     {ARGS_TOKEN_OUTPUT, "--output", "-o"},
-    {ARGS_TOKEN_HELP, "--help", "-h"}
+    {ARGS_TOKEN_HELP, "--help", "-h"},
+    {ARGS_TOKEN_VERBOSE, "--verbose", "-v"}
   };
 
   // @NOTE: This is potentially very slow
@@ -222,10 +226,14 @@ bool parse_arguments(int argc, char** argv) {
         exclude_dir_token(args, &i);
         break;
       case ARGS_TOKEN_OUTPUT:
+        s_checker.output_file_name = args[++i].option;
         break;
       case ARGS_TOKEN_HELP:
         show_help();
         return false;
+      case ARGS_TOKEN_VERBOSE:
+        s_checker.is_verbose = true;
+        break;
       case ARGS_TOKEN_LITERAL: 
       case ARGS_TOKEN_EOF:
         break;
@@ -243,9 +251,9 @@ bool parse_arguments(int argc, char** argv) {
 /// -------------------------------------------------------------------------------------------------
 /// Checker functions
 
-void checker_init(int argc, char** argv) {
+bool checker_init(int argc, char** argv) {
   if(!parse_arguments(argc, argv)) {
-    return;
+    return false;
   }
 
   // Check all the included source files
@@ -253,7 +261,7 @@ void checker_init(int argc, char** argv) {
     checker_check_file(file);
   }
 
-  checker_list();
+  return true;
 }
 
 void checker_check_file(const std::filesystem::path& path) {
@@ -268,12 +276,14 @@ void checker_check_file(const std::filesystem::path& path) {
     printf("[CHECKER-ERROR]: Failed to open source file at \'%s\'\n", path.string().c_str());
     return;
   }
-  
-  printf("[CHECKER-TRACE]: Checking in file \'%s\'...\n", path.string().c_str());
+ 
+  if(s_checker.is_verbose) {
+    printf("[CHECKER-TRACE]: Checking in file \'%s\'...\n", path.string().c_str());
+  }
 
   // A new entry to the checker
   CheckerEntry entry;
-  entry.file_name = path.filename();
+  entry.file_name = path;
 
   // Get the full source code string
   std::stringstream ss;
@@ -307,7 +317,41 @@ void checker_check_file(const std::filesystem::path& path) {
   }
 }
 
+void checker_save_output() {
+  // Open the the output file first
+  std::ofstream file(s_checker.output_file_name, std::ios::out | std::ios::trunc);
+  if(!file.is_open()) {
+    printf("[CHECKER-ERROR]: Failed to open the output file at \'%s\'\n", s_checker.output_file_name.string().c_str());
+    return;
+  }
+
+  for(auto& entry : s_checker.entries) {
+    file << '\n' << (entry.file_name.filename()) << ": \n";
+
+    file << "\nWin32 functions amount = " << entry.functions.size() << '\n'; 
+    for(auto& func : entry.functions) {
+      file << " - " << func << '\n';
+    }
+
+    file << "\nWin32 headers amount = " << entry.headers.size() << '\n'; 
+    for(auto& header : entry.headers) {
+      file << " - " << header << '\n';
+    }
+
+    file << "\nWin32 total occurrences = " << entry.total_occurrences << "\n\n"; 
+  }
+
+  file << "\nTotal functions amount  = " << s_checker.total_functions << '\n'; 
+  file << "\nTotal headers amount    = " <<  s_checker.total_headers << '\n'; 
+  
+  printf("[CHECKER-INFO]: Saved results at \'%s\'\n", s_checker.output_file_name.string().c_str());
+}
+
 void checker_list() {
+  if(!s_checker.is_verbose) {
+    return;
+  }
+
   printf("\n\n+++++ Win32Checker ++++++\n"); 
 
   for(auto& entry : s_checker.entries) {

@@ -8,9 +8,11 @@
 /// -------------------------------------------------------------------------------------------------
 /// Checker functions
 
-void checker_init(int argc, char** argv);
+bool checker_init(int argc, char** argv);
 
 void checker_check_file(const std::filesystem::path& path);
+
+void checker_save_output();
 
 void checker_list();
 

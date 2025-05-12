@@ -1,0 +1,377 @@
+
+"DllMain.cpp": 
+
+Win32 functions amount = 1
+ - DllMain
+
+Win32 headers amount = 1
+ - windows.h
+
+Win32 total occurrences = 2
+
+
+"MSThreads.cpp": 
+
+Win32 functions amount = 2
+ - GetCurrentThread
+ - GetCurrentThreadId
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 2
+
+
+"NTEventLogAppender.cpp": 
+
+Win32 functions amount = 11
+ - DeregisterEventSource
+ - lstrcat
+ - lstrcpy
+ - lstrlen
+ - RegCloseKey
+ - RegCreateKey
+ - RegCreateKeyEx
+ - RegisterEventSource
+ - RegSetValue
+ - RegSetValueEx
+ - ReportEvent
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 11
+
+
+"config-win32.h": 
+
+Win32 functions amount = 0
+
+Win32 headers amount = 1
+ - windows.h
+
+Win32 total occurrences = 1
+
+
+"Win32DebugAppender.cpp": 
+
+Win32 functions amount = 1
+ - OutputDebugString
+
+Win32 headers amount = 2
+ - windows.h
+ - winbase.h
+
+Win32 total occurrences = 3
+
+
+"RemoteSyslogAppender.cpp": 
+
+Win32 functions amount = 1
+ - GetLastError
+
+Win32 headers amount = 1
+ - winsock2.h
+
+Win32 total occurrences = 2
+
+
+"jerror.c": 
+
+Win32 functions amount = 2
+ - GetActiveWindow
+ - MessageBox
+
+Win32 headers amount = 1
+ - windows.h
+
+Win32 total occurrences = 3
+
+
+"os_win32.c": 
+
+Win32 functions amount = 30
+ - CancelIo
+ - CloseHandle
+ - ConnectNamedPipe
+ - CreateFile
+ - CreateIoCompletionPort
+ - CreateMutex
+ - CreateNamedPipe
+ - CreateProcess
+ - DebugBreak
+ - DisconnectNamedPipe
+ - EnterCriticalSection
+ - ExitThread
+ - FlushFileBuffers
+ - FormatMessage
+ - GetCurrentProcess
+ - GetLastError
+ - GetQueuedCompletionStatus
+ - GetStdHandle
+ - Handler
+ - InitializeCriticalSection
+ - LeaveCriticalSection
+ - LocalFree
+ - PostQueuedCompletionStatus
+ - ReadFile
+ - ReleaseMutex
+ - SetNamedPipeHandleState
+ - SetStdHandle
+ - TerminateProcess
+ - WaitForSingleObject
+ - WriteFile
+
+Win32 headers amount = 2
+ - windows.h
+ - winsock2.h
+
+Win32 total occurrences = 32
+
+
+"fcgios.h": 
+
+Win32 functions amount = 2
+ - GetLastError
+ - SetLastError
+
+Win32 headers amount = 2
+ - windows.h
+ - winsock2.h
+
+Win32 total occurrences = 4
+
+
+"cgi-fcgi.c": 
+
+Win32 functions amount = 2
+ - DebugBreak
+ - Handler
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 2
+
+
+"RawTile.h": 
+
+Win32 functions amount = 1
+ - Rectangle
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 1
+
+
+"LeicaSCN_SDK.h": 
+
+Win32 functions amount = 1
+ - Handler
+
+Win32 headers amount = 1
+ - windows.h
+
+Win32 total occurrences = 2
+
+
+"LeicaSCN_SDK.cpp": 
+
+Win32 functions amount = 2
+ - MessageBox
+ - OpenFile
+
+Win32 headers amount = 1
+ - windows.h
+
+Win32 total occurrences = 3
+
+
+"SCNTile.h": 
+
+Win32 functions amount = 1
+ - Handler
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 1
+
+
+"FCGI-SCN.cpp": 
+
+Win32 functions amount = 3
+ - Handler
+ - IsDebuggerPresent
+ - SetErrorMode
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 3
+
+
+"SCNImage.h": 
+
+Win32 functions amount = 1
+ - Rectangle
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 1
+
+
+"SCNRequestHandler.cpp": 
+
+Win32 functions amount = 2
+ - GetProp
+ - Handler
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 2
+
+
+"SCNRequestHandler.h": 
+
+Win32 functions amount = 1
+ - Handler
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 1
+
+
+"SCNImage.cpp": 
+
+Win32 functions amount = 8
+ - GetCurrentThread
+ - GetCurrentThreadId
+ - GetProp
+ - GlobalMemoryStatus
+ - GlobalMemoryStatusEx
+ - Handler
+ - QueryPerformanceCounter
+ - Rectangle
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 8
+
+
+"FCGI-SCN.h": 
+
+Win32 functions amount = 0
+
+Win32 headers amount = 1
+ - windows.h
+
+Win32 total occurrences = 1
+
+
+"SlideInformation.h": 
+
+Win32 functions amount = 1
+ - Rectangle
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 1
+
+
+"SlideInformation.cpp": 
+
+Win32 functions amount = 1
+ - Rectangle
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 1
+
+
+"zconf.h": 
+
+Win32 functions amount = 0
+
+Win32 headers amount = 1
+ - windows.h
+
+Win32 total occurrences = 1
+
+
+"gzguts.h": 
+
+Win32 functions amount = 1
+ - GetLastError
+
+Win32 headers amount = 1
+ - windows.h
+
+Win32 total occurrences = 2
+
+
+"minigzip.c": 
+
+Win32 functions amount = 4
+ - FormatMessage
+ - GetLastError
+ - LocalFree
+ - SetLastError
+
+Win32 headers amount = 1
+ - windows.h
+
+Win32 total occurrences = 5
+
+
+"gzlib.c": 
+
+Win32 functions amount = 4
+ - FormatMessage
+ - GetLastError
+ - LocalFree
+ - SetLastError
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 4
+
+
+"UriEscape.c": 
+
+Win32 functions amount = 1
+ - Escape
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 1
+
+
+"UriQuery.c": 
+
+Win32 functions amount = 1
+ - Escape
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 1
+
+
+"Uri.h": 
+
+Win32 functions amount = 1
+ - Escape
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 1
+
+
+"UriFile.c": 
+
+Win32 functions amount = 1
+ - Escape
+
+Win32 headers amount = 0
+
+Win32 total occurrences = 1
+
+
+Total functions amount  = 87
+
+Total headers amount    = 16

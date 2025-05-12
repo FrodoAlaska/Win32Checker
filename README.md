@@ -44,7 +44,14 @@ You can also check just a single source file:
 win32checker --file "path/to/Win32App/src/main.cpp"
 ```
 
-When Win32Checker finishes it search, it will generate the results in the console like such.
+Or multiple all at once: 
+
+
+```
+win32checker --file "path/to/Win32App/src/main.cpp" "path/to/Win32App/window.cpp"
+```
+
+When Win32Checker is done searching, it will generate the results in the console like such.
 
 
 ```
@@ -68,11 +75,11 @@ Total headers amount    = 1
 +++++ Win32Checker ++++++
 ```
 
-We can also exclude a certain directory from the search:
+We can also exclude certain directories from the search:
 
 
 ```
-win32checker --exclude "path/to/Win32App/include" --recursive "path/to/Win32App"
+win32checker --exclude "path/to/Win32App/include" "path/to/Win32App/thirdparty" --recursive "path/to/Win32App"
 ```
 
 Here, Win32Checker will ignore the directory "include" in "Win32App".
