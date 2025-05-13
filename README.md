@@ -88,17 +88,22 @@ Total headers amount    = 4
 You can also save the results into a specific output file by using the commands below: 
 
 ```
-win32checker --file "path/to/Win32App/src/main.cpp" "path/to/Win32App/window.cpp" --output "../output.txt"
+win32checker --file "path/to/Win32App/src/main.cpp" "path/to/Win32App/window.cpp" --output "output.txt"
+```
+
+Win32Checker also supports the CSV format. Just make sure to have the output file's name have the `.csv` extension. 
+
+```
+win32checker --recursive "path/to/Win32App/src" --output "output.csv"
 ```
 
 We can also exclude certain directories from the search:
-
 
 ```
 win32checker --exclude "path/to/Win32App/include" "path/to/Win32App/thirdparty" --recursive "path/to/Win32App"
 ```
 
-Here, Win32Checker will ignore the directory "include" in "Win32App".
+Here, Win32Checker will ignore the directory "include" and "thirdparty" in "Win32App".
 
 ## Installation 
 

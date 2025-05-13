@@ -44,7 +44,7 @@ void export_to_csv(CheckerState& state) {
   }
 
   // Defining the columns
-  file << "Source file," << "Total occurrences," << "Total functions," << "Total headers," << '\n'; //"Headers," << "Functions," << '\n';
+  file << "Source file," << "Total occurrences," << "Total functions," << "Total headers," << '\n';
   
   // Adding each entry
   for(auto& entry : state.entries) {
