@@ -1,4 +1,5 @@
 #include "checker.h"
+#include "exporters.h"
 #include "win32_api_index.h"
 
 #include <cstdio>
@@ -42,39 +43,6 @@ struct Args {
   std::string alt_option;
 };
 /// Args
-/// -------------------------------------------------------------------------------------------------
-
-/// -------------------------------------------------------------------------------------------------
-/// CheckerEntry
-struct CheckerEntry {
-  std::filesystem::path file_name;
-
-  std::vector<std::string> functions;
-  std::vector<std::string> headers;
-
-  int total_occurrences;
-};
-/// CheckerEntry
-/// -------------------------------------------------------------------------------------------------
-
-/// -------------------------------------------------------------------------------------------------
-/// CheckerState
-struct CheckerState {
-  std::vector<std::filesystem::path> source_files;
-  std::unordered_set<std::filesystem::path> exculsions;
-  
-  std::vector<CheckerEntry> entries;
-
-  std::filesystem::path working_dir      = "";
-  std::filesystem::path output_file_name = "output.txt";
-
-  int total_headers   = 0; 
-  int total_functions = 0;
-  bool is_verbose     = false;
-};
-
-static CheckerState s_checker = {};
-/// CheckerState
 /// -------------------------------------------------------------------------------------------------
 
 /// -------------------------------------------------------------------------------------------------
@@ -151,45 +119,45 @@ static void lex_arguments(int argc, char** argv, std::vector<Args>* out_args) {
   out_args->push_back(Args{ARGS_TOKEN_EOF});
 }
 
-void check_directory(const std::string& dir, const bool recursive) {
+void check_directory(CheckerState* state, const std::string& dir, const bool recursive) {
   if(!recursive) {
-    for(auto& path : std::filesystem::directory_iterator(s_checker.working_dir / dir)) {
+    for(auto& path : std::filesystem::directory_iterator(state->working_dir / dir)) {
       if(!is_valid_file_extension(path.path().extension())) {
         continue;
       }
 
-      s_checker.source_files.push_back(path.path());
+      state->source_files.push_back(path.path());
     }
     
     return;
   }
   
-  for(auto& path : std::filesystem::recursive_directory_iterator(s_checker.working_dir / dir)) {
+  for(auto& path : std::filesystem::recursive_directory_iterator(state->working_dir / dir)) {
     if(!is_valid_file_extension(path.path().extension())) {
       continue;
     }
 
-      s_checker.source_files.push_back(path.path());
+      state->source_files.push_back(path.path());
   }
 }
 
-void exclude_directory(const std::string& dir) {
-  for(auto& path : std::filesystem::recursive_directory_iterator(s_checker.working_dir / dir)) {
+void exclude_directory(CheckerState* state, const std::string& dir) {
+  for(auto& path : std::filesystem::recursive_directory_iterator(state->working_dir / dir)) {
     if(!is_valid_file_extension(path.path().extension())) {
       continue;
     }
 
-    s_checker.exculsions.emplace(path.path());
+    state->exculsions.emplace(path.path());
   }
 }
 
-static void file_token_check(std::vector<Args>& args, int* current_index) {
+static void file_token_check(CheckerState* state, std::vector<Args>& args, int* current_index) {
   Args* current_arg = &args[*current_index + 1];
 
   while(current_arg->token == ARGS_TOKEN_LITERAL) {
     std::filesystem::path path = current_arg->option;
     if(is_valid_file_extension(path.extension())) {
-      s_checker.source_files.push_back(path);
+      state->source_files.push_back(path);
     }
 
     *current_index += 1;
@@ -197,29 +165,29 @@ static void file_token_check(std::vector<Args>& args, int* current_index) {
   }
 }
 
-static void directory_token_check(std::vector<Args>& args, int* current_index, const bool recursive) {
+static void directory_token_check(CheckerState* state, std::vector<Args>& args, int* current_index, const bool recursive) {
   Args* current_arg = &args[*current_index + 1];
 
   while(current_arg->token == ARGS_TOKEN_LITERAL) {
-    check_directory(current_arg->option, recursive);
+    check_directory(state, current_arg->option, recursive);
 
     *current_index += 1;
     current_arg     = &args[*current_index + 1];
   }
 }
 
-static void exclude_dir_token(std::vector<Args>& args, int* current_index) {
+static void exclude_dir_token(CheckerState* state, std::vector<Args>& args, int* current_index) {
   Args* current_arg = &args[*current_index + 1];
 
   while(current_arg->token == ARGS_TOKEN_LITERAL) {
-    exclude_directory(current_arg->option);
+    exclude_directory(state, current_arg->option);
 
     *current_index += 1;
     current_arg     = &args[*current_index + 1];
   }
 }
 
-bool parse_arguments(int argc, char** argv) {
+bool parse_arguments(CheckerState* out_state, int argc, char** argv) {
   std::vector<Args> args; 
   lex_arguments(argc, argv, &args);
 
@@ -228,28 +196,28 @@ bool parse_arguments(int argc, char** argv) {
 
     switch(current_arg->token) {
       case ARGS_TOKEN_WORKING_DIR:
-        s_checker.working_dir = args[++i].option;
+        out_state->working_dir = args[++i].option;
         break;
       case ARGS_TOKEN_FILE:
-        file_token_check(args, &i);
+        file_token_check(out_state, args, &i);
         break;
       case ARGS_TOKEN_DIRECTORY: 
-        directory_token_check(args, &i, false);
+        directory_token_check(out_state, args, &i, false);
         break;
       case ARGS_TOKEN_RECURSIVE:
-        directory_token_check(args, &i, true);
+        directory_token_check(out_state, args, &i, true);
         break;
       case ARGS_TOKEN_EXCLUDE:
-        exclude_dir_token(args, &i);
+        exclude_dir_token(out_state, args, &i);
         break;
       case ARGS_TOKEN_OUTPUT:
-        s_checker.output_file_name = args[++i].option;
+        out_state->output_file_name = args[++i].option;
         break;
       case ARGS_TOKEN_HELP:
         show_help();
         return false;
       case ARGS_TOKEN_VERBOSE:
-        s_checker.is_verbose = true;
+        out_state->is_verbose = true;
         break;
       case ARGS_TOKEN_LITERAL: 
       case ARGS_TOKEN_EOF:
@@ -268,22 +236,22 @@ bool parse_arguments(int argc, char** argv) {
 /// -------------------------------------------------------------------------------------------------
 /// Checker functions
 
-bool checker_init(int argc, char** argv) {
-  if(!parse_arguments(argc, argv)) {
+bool checker_init(CheckerState* out_state, int argc, char** argv) {
+  if(!parse_arguments(out_state, argc, argv)) {
     return false;
   }
 
   // Check all the included source files
-  for(auto& file : s_checker.source_files) {
-    checker_check_file(file);
+  for(auto& file : out_state->source_files) {
+    checker_check_file(*out_state, file);
   }
 
   return true;
 }
 
-void checker_check_file(const std::filesystem::path& path) {
+void checker_check_file(CheckerState& state, const std::filesystem::path& path) {
   // We don't care about any exculsions
-  if(s_checker.exculsions.find(path) != s_checker.exculsions.end()) {
+  if(state.exculsions.find(path) != state.exculsions.end()) {
     return;
   }
 
@@ -294,7 +262,7 @@ void checker_check_file(const std::filesystem::path& path) {
     return;
   }
  
-  if(s_checker.is_verbose) {
+  if(state.is_verbose) {
     printf("[CHECKER-TRACE]: Checking in file \'%s\'...\n", path.string().c_str());
   }
 
@@ -312,7 +280,7 @@ void checker_check_file(const std::filesystem::path& path) {
     // Check against the functions index
     if(source_code.find(header) != std::string::npos) {
       entry.headers.push_back(header);
-      s_checker.total_headers++;
+      state.total_headers++;
     }
   }
 
@@ -321,7 +289,7 @@ void checker_check_file(const std::filesystem::path& path) {
     // Check against the functions index
     if(source_code.find(func) != std::string::npos) {
       entry.functions.push_back(func);
-      s_checker.total_functions++;
+      state.total_functions++;
     }
   }
 
@@ -330,48 +298,35 @@ void checker_check_file(const std::filesystem::path& path) {
   // Only add the entry if there are occurrences of Win32 in the file 
   if(!entry.functions.empty() || !entry.headers.empty()) {
     entry.total_occurrences = entry.headers.size() + entry.functions.size();
-    s_checker.entries.push_back(entry);
+    state.entries.push_back(entry);
   }
 }
 
-void checker_save_output() {
-  // Open the the output file first
-  std::ofstream file(s_checker.output_file_name, std::ios::out | std::ios::trunc);
-  if(!file.is_open()) {
-    printf("[CHECKER-ERROR]: Failed to open the output file at \'%s\'\n", s_checker.output_file_name.string().c_str());
+void checker_save_output(CheckerState& state) {
+  // Export/save to the specific file format
+  std::filesystem::path ext = state.output_file_name.extension(); 
+  if(ext == ".txt") {
+    export_to_txt(state);
+  }
+  else if (ext == ".csv") {
+    export_to_csv(state);
+  }
+  else {
+    printf("[CHECKER-ERROR]: The output file given \'%s\' is an unsupported format\n", state.output_file_name.string().c_str());
     return;
   }
-
-  for(auto& entry : s_checker.entries) {
-    file << '\n' << (entry.file_name.filename()) << ": \n";
-
-    file << "\nWin32 functions amount = " << entry.functions.size() << '\n'; 
-    for(auto& func : entry.functions) {
-      file << " - " << func << '\n';
-    }
-
-    file << "\nWin32 headers amount = " << entry.headers.size() << '\n'; 
-    for(auto& header : entry.headers) {
-      file << " - " << header << '\n';
-    }
-
-    file << "\nWin32 total occurrences = " << entry.total_occurrences << "\n\n"; 
-  }
-
-  file << "\nTotal functions amount  = " << s_checker.total_functions << '\n'; 
-  file << "\nTotal headers amount    = " <<  s_checker.total_headers << '\n'; 
   
-  printf("[CHECKER-INFO]: Saved results at \'%s\'\n", s_checker.output_file_name.string().c_str());
+  printf("[CHECKER-INFO]: Saved results at \'%s\'\n", state.output_file_name.string().c_str());
 }
 
-void checker_list() {
-  if(!s_checker.is_verbose) {
+void checker_list(CheckerState& state) {
+  if(!state.is_verbose) {
     return;
   }
 
   printf("\n\n+++++ Win32Checker ++++++\n"); 
 
-  for(auto& entry : s_checker.entries) {
+  for(auto& entry : state.entries) {
     printf("\n=== === %s === ===\n", entry.file_name.string().c_str()); 
 
     printf("\nWin32 functions amount = %zu\n", entry.functions.size()); 
@@ -389,8 +344,8 @@ void checker_list() {
   }
 
   printf("\n=== === Global === ===\n"); 
-  printf("\nTotal functions amount  = %i", s_checker.total_functions); 
-  printf("\nTotal headers amount    = %i", s_checker.total_headers); 
+  printf("\nTotal functions amount  = %i", state.total_functions); 
+  printf("\nTotal headers amount    = %i", state.total_headers); 
   printf("\n\n=== === Global === ===\n"); 
   
   printf("\n+++++ Win32Checker ++++++\n\n"); 
